@@ -13,6 +13,7 @@ int i = 0;
 int NumOfBalls = 1;
 int hits = 0;
 
+//structure for a ball
 struct ball {
 	int x;
 	int y;
@@ -20,7 +21,7 @@ struct ball {
 	int vy;
 } lob[MAXBALLS];
 
-
+//standard inits
 int initOSLib(){
     oslInit(0);
     oslInitGfx(OSL_PF_8888, 1);
@@ -34,17 +35,19 @@ int initOSLib(){
 
 int startSong(){
 	OSL_SOUND *music;
+	//song.bgm is required in the memory stick in the same directory as the EBOOT.PBP
 	music = oslLoadSoundFileBGM("song.bgm", OSL_FMT_STREAM);
 	oslAssert(music);
 	oslPlaySound(music, 0);
 	return 0;
 }
 
+//code to generate a new ball, index = parent
 int newBall(int index) {
-	lob[NumOfBalls].x = lob[index].x - 5;
+	lob[NumOfBalls].x = lob[index].x - 5; //make sure it doesn't generate its own ball
 	lob[NumOfBalls].y = lob[index].y;
-	lob[NumOfBalls].vx = ((rand() % 4) + 2) * -1;
-	lob[NumOfBalls].vy = -1 * lob[index].vy;
+	lob[NumOfBalls].vx = ((rand() % 4) + 2) * -1; //random velocity to keep things interesting
+	lob[NumOfBalls].vy = -1 * lob[index].vy; //peels off of parent ball
 	return ++NumOfBalls;
 
 }
@@ -61,6 +64,8 @@ int readInput(int py){
 	return py;
 }
 
+
+//game over stuff
 int gameOver(int score) {
 	char buffer [32];
 	int skip = 0;
@@ -84,35 +89,35 @@ int moveBalls(int py, int score){
 	for (i = 0; i < NumOfBalls; i++) {
 		lob[i].x += lob[i].vx;
 		lob[i].y += lob[i].vy;
-		if (lob[i].x > 460) {
-			if (lob[i].y > py - 5 && lob[i].y < py + 45) {
-				lob[i].vx *= -1;
+		if (lob[i].x > 460) { // paddle side
+			if (lob[i].y > py - 5 && lob[i].y < py + 45) { //making sure it hit the paddle
+				lob[i].vx *= -1; //reverse it
 				if (NumOfBalls < MAXBALLS && hits >= (NumOfBalls * NumOfBalls)) {
-					newBall(i);
+					newBall(i); //possibly add new ball
 					hits = 0;
 				} else {
-					hits++;
+					hits++; //or just keep going
 				}
-			} else {
+			} else { //or else game over
 				gameOver(score);
 			}
 		}
-		if (lob[i].x < 0) {
+		if (lob[i].x < 0) { //bounce off other wall
 			lob[i].vx *= -1;
-			if (lob[i].vx > 1) {
-				lob[i].vx -= 1;
-				lob[i].x = 3;
+			if (lob[i].vx > 1) { //slow it down (otherwise it was too difficult)
+				lob[i].vx--;
+				lob[i].x = 5;
 			}
 		}
-		if (lob[i].y > 260 || lob[i].y < 0)
+		if (lob[i].y > 260 || lob[i].y < 0) //bounce off ceiling and floor
 			lob[i].vy *= -1;
-			if (lob[i].vx > 1) {
-				lob[i].vx -= 1;
+			if (lob[i].vx > 1) { //slow it down
+				lob[i].vx--;
 			}
 	}
 	return 0;
 }
-int drawScreen(int skip, int py, int score){
+int drawScreen(int skip, int py, int score){ //draw functi
 	char buffer [32];
 	 if (!skip){
             oslStartDrawing();
@@ -135,7 +140,7 @@ int drawScreen(int skip, int py, int score){
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main(){
     int skip = 0;
-	int py = 0;
+	int py = 0; //player y-coordinate
 	int score = 0;
 	
     initOSLib();
@@ -146,14 +151,14 @@ int main(){
     oslIntraFontSetStyle(pgfFont, 1.0, RGBA(255,255,255,255), RGBA(0,0,0,0), INTRAFONT_ALIGN_LEFT);
     oslSetFont(pgfFont);
 
-	startSong();
+	startSong(); //load song
 	
-	lob[0].x = 0;
+	lob[0].x = 0; //initial ball
 	lob[0].y = rand() % 250;
 	lob[0].vx = 1;
 	lob[0].vy = -1;
 	
-    while(!osl_quit){
+    while(!osl_quit){ //main game loop
 		py = readInput(py);
 		moveBalls(py, score);
 		drawScreen(skip, py, score);
